@@ -1,6 +1,5 @@
 import pool from "../db.js";
 
-// Admin creates a resource
 export const createResource = async (req, res) => {
     try {
         const { name, description, location, capacity } = req.body;
@@ -18,13 +17,11 @@ export const createResource = async (req, res) => {
     }
 };
 
-// List all resources
 export const getResources = async (req, res) => {
     const result = await pool.query("SELECT * FROM tbl_resources");
     res.json(result.rows);
 };
 
-// Admin adds availability (weekly schedule)
 export const addAvailability = async (req, res) => {
     const { resource_id, day_of_week, start_time, end_time } = req.body;
 
@@ -54,7 +51,6 @@ export const addAvailability = async (req, res) => {
     }
 };
 
-// Admin adds blackout dates
 export const addBlackout = async (req, res) => {
     const { resource_id, start_datetime, end_datetime, reason } = req.body;
 
@@ -68,7 +64,6 @@ export const addBlackout = async (req, res) => {
     res.json(result.rows[0]);
 };
 
-// GET weekly availability list
 export const getAvailability = async (req, res) => {
     const resource_id = req.params.resource_id;
 
@@ -87,7 +82,6 @@ export const getAvailability = async (req, res) => {
     res.json(result.rows);
 };
 
-// GET availability for specific date (with booked slots removed)
 export async function getResourceAvailability(req, res) {
     try {
         const resource_id = req.params.resource_id;
@@ -96,7 +90,6 @@ export async function getResourceAvailability(req, res) {
         if (!date)
             return res.status(400).json({ error: "Date is required" });
 
-        // Fetch base schedule rules
         const base = await pool.query(
             `SELECT day_of_week, start_time, end_time
              FROM tbl_resource_availability
@@ -115,7 +108,6 @@ export async function getResourceAvailability(req, res) {
         if (rules.length === 0)
             return res.json([]);
 
-        // Fetch booked times
         const booked = await pool.query(
             `SELECT 
                  start_datetime::time AS start_time,
@@ -132,7 +124,6 @@ export async function getResourceAvailability(req, res) {
         const slots = [];
 
         for (let r of rules) {
-            // FIX: ensure we always get a clean HH:MM
             const startStr = r.start_time.toString().substring(0, 5);
             const endStr = r.end_time.toString().substring(0, 5);
 

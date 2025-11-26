@@ -1,16 +1,14 @@
 import pool from "../db.js";
+import { sendEmail } from "../sendEmail.js";
 
-// CREATE BOOKING
 export const createBooking = async (req, res) => {
     try {
         const user_id = req.user_id;
         const { resource_id, date, start_time, end_time, purpose } = req.body;
 
-        // Build timestamps
         const start_datetime = `${date} ${start_time}:00`;
         const end_datetime = `${date} ${end_time}:00`;
 
-        // Detect conflicts (overlapping bookings)
         const conflict = await pool.query(
             `SELECT 1 
              FROM tbl_bookings
@@ -27,7 +25,6 @@ export const createBooking = async (req, res) => {
             return res.status(400).json({ error: "This slot is already booked" });
         }
 
-        // Insert booking
         await pool.query(
             `INSERT INTO tbl_bookings 
              (user_id, resource_id, start_datetime, end_datetime, purpose)
@@ -46,8 +43,6 @@ export const createBooking = async (req, res) => {
     }
 };
 
-
-// USER’S BOOKINGS
 export const getMyBookings = async (req, res) => {
     try {
         const user_id = req.user_id;
@@ -76,8 +71,6 @@ export const getMyBookings = async (req, res) => {
     }
 };
 
-
-// DELETE BOOKING
 export const deleteBooking = async (req, res) => {
     try {
         const user_id = req.user_id;
@@ -133,12 +126,10 @@ export const getNextBooking = async (req, res) => {
     }
 };
 
-// APPROVE BOOKING
 export const approveBooking = async (req, res) => {
     try {
         const booking_id = req.params.id;
 
-        // Update booking status
         const q = await pool.query(
             `UPDATE tbl_bookings
              SET status = 'APPROVED'
@@ -152,12 +143,21 @@ export const approveBooking = async (req, res) => {
 
         const { user_id, start_datetime } = q.rows[0];
 
-        // Insert notification
+        const userQuery = await pool.query(
+            `SELECT email FROM tbl_user WHERE user_id = $1`,
+            [user_id]
+        );
+        const userEmail = userQuery.rows[0].email;
+
+        const msg = `Your booking on ${start_datetime} has been approved.`;
+
         await pool.query(
             `INSERT INTO tbl_notifications (user_id, message, status)
              VALUES ($1, $2, 'UNREAD')`,
-            [user_id, `Your booking on ${start_datetime} has been approved.`]
+            [user_id, msg]
         );
+
+        sendEmail(userEmail, "Booking Approved", msg);
 
         res.json({ success: true, message: "Booking approved" });
 
@@ -167,13 +167,10 @@ export const approveBooking = async (req, res) => {
     }
 };
 
-
-// DENY BOOKING
 export const denyBooking = async (req, res) => {
     try {
         const booking_id = req.params.id;
 
-        // Update booking status
         const q = await pool.query(
             `UPDATE tbl_bookings
              SET status = 'DENIED'
@@ -187,12 +184,21 @@ export const denyBooking = async (req, res) => {
 
         const { user_id, start_datetime } = q.rows[0];
 
-        // Insert notification
+        const userQuery = await pool.query(
+            `SELECT email FROM tbl_user WHERE user_id = $1`,
+            [user_id]
+        );
+        const userEmail = userQuery.rows[0].email;
+
+        const msg = `Your booking on ${start_datetime} has been denied.`;
+
         await pool.query(
             `INSERT INTO tbl_notifications (user_id, message, status)
              VALUES ($1, $2, 'UNREAD')`,
-            [user_id, `Your booking on ${start_datetime} has been denied.`]
+            [user_id, msg]
         );
+
+        sendEmail(userEmail, "Booking Denied", msg);
 
         res.json({ success: true, message: "Booking denied" });
 
@@ -202,7 +208,6 @@ export const denyBooking = async (req, res) => {
     }
 };
 
-// ADMIN - GET ALL PENDING BOOKING REQUESTS
 export const getPendingRequests = async (req, res) => {
     try {
         const q = await pool.query(

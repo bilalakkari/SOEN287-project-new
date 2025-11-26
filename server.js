@@ -5,12 +5,13 @@ import dotenv from "dotenv";
 import userRoutes from "./routes/user.routes.js";
 import resourceRoutes from "./routes/resource.routes.js";
 import bookingRoutes from "./routes/booking.routes.js";
+import notificationRoutes from "./routes/notification.route.js";
+import adminRoutes from "./routes/admin.routes.js";
+
 import path from "path";
+import { fileURLToPath } from "url";
 
 dotenv.config();
-
-
-import { fileURLToPath } from "url";
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -33,6 +34,8 @@ app.use(express.json());
 app.use("/api/users", userRoutes);
 app.use("/api/resources", resourceRoutes);
 app.use("/api/bookings", bookingRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.listen(process.env.PORT, () => {
     console.log("Server running on port " + process.env.PORT);

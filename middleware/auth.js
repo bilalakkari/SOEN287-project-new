@@ -16,7 +16,6 @@ export function auth(req, res, next) {
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        // Set useful properties
         req.user_id = decoded.user_id;
         req.role = decoded.role;
 
